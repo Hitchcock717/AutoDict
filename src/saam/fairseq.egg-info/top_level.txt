@@ -1,4 +1,0 @@
-fairseq
-metrics
-scripts
-tests
