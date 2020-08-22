@@ -1,114 +1,63 @@
-# Chinese Definition Modeling
+# AutoDict-CCL2020
 
-This repository is connected with Chinese Definition Modeling task.
+- 论文: 基于BERT与柱搜索的中文释义生成 
 
-The src directory consists of three models:
+- 联系方式: <blcufqn@hotmail.com>
 
-- baseline
-- Adaptive-Attention Model
-- Self- and Adaptive-Attention Model
+## 环境配置
 
-Paper Link: https://arxiv.org/abs/1905.06512
+python (3.6)
 
-Contact: cunliang.kong@outlook.com
+numpy (1.19.1)
 
-## Dataset Construction
+torch (1.4.0)
 
-### Requirements
+torchvision (0.2.1)
 
-- python (3.6)
-- xlrd (1.1.0)
-- jieba (0.39)
-- progressbar2 (3.38.0)
+transformers (2.9.1)
 
-### Construction
+nltk (3.5)
 
-The dataset construction procedure follows the `README.md`file in the `scripts/make_dataset` directory.
+sklearn (0.0)
 
-We have also written an integreted script `make_dataset.sh` in the directory of `src`. 
+sentence_transformers (0.3.3)
 
-```bash
-cd src
-chmod +x make_dataset.sh
-./make_dataset.sh
+## 数据准备
+
+请从[此处](https://drive.google.com/drive/folders/1KwWxiRU_lOl9VcaCORBeKp0msCrEpkkY?usp=sharing)下载预训练中文词向量（merge_sgns_bigram_char300.txt）和英文词向量（cc.en.300.vec）文件，分别置于./data/cwn和./data/oxford目录下。
+
+注：以下仅展示中文CWN数据集上的实验过程，英文实验过程相同。
+
+```shell
+cd ./data/cwn
+python make_vocab.py
+python make_vector.py
 ```
 
-The CWN dataset we used in the experiments is in the `dataset/cwn` directory.
+## 实验
 
-## Baseline
+**模型训练** 分为两个阶段
 
-The baseline model is based on [Websail-NU/torch-defseq](https://github.com/websail-nu/torch-defseq), and detailed instruction can be found there.
+第一阶段：固定编码器参数，仅训练解码器。
 
-## Adaptive-Attention Model
+```shell
+./train_cbert01.sh 
+```
 
-The Adaptive-Attention model is in the directory of `src/aam`, and can run as follows:
+第二阶段：同时调优编码器和解码器参数。注意将脚本中load_model参数的***改为上一阶段训练保存的最好模型。
 
-- Requirements
+```shell
+./train_cbert02.sh
+```
 
-  - python (2.7)
-  - pytorch (0.3.1)
-  - numpy (1.14.5)
-  - gensim (3.5.0)
-  - [kenlm](https://github.com/kpu/kenlm/)
+**模型测试**
 
-- Preprocess
+```shell
+./test_cbert01.sh
+./test_cbert02.sh
+python caculate_semantic_similarity.py # 计算语义相似度指标
+```
 
-    The preprocess procedure is written in the script of `preprocess.sh`. During preprocessing, we used pretrained Chinese word embeddings, which is trained on the [Chinese Gigaword Corpus](https://catalog.ldc.upenn.edu/LDC2011T13). [Jieba](https://github.com/fxsjy/jieba) Chinese segmentation tool is employed. The binarized word2vec file is named `gigaword_300d_jieba.bin` placed in the directory of `data`.
+**人工评价**
 
-    ```bash
-    cd src/adaptive
-    ./preprocess.sh
-    ```
-
-- Training & Inference
-
-    You can use following commands to train and inference. Also, we've uploaded the `training_lot.txt` of the best model in the directory of `models/adaptive/best`.
-
-    ```bash
-    ./train.sh best #using the best parameters to train a model
-    ./inference.sh best 22 #22 denotes the best epoch
-    ```
-
-- Scoring
-  - A `function_words.txt` is needed in the `data` directory, we've extracted one from the HowNet when making the dataset
-  - A `chinesegigawordv5.lm` Chinese language model is needed in the `data` directory, any arpa format language model will do
-  - Then you can use the following script to compute the score of BLEU
-  ```bash
-  ./score.sh best 21 #21 denotes the best epoch
-  ```
-
-## Self- and Adaptive-Attention Model
-
-The Self- and Adaptive-Attention Model is in the directory of `src/saam`.  The instruction of this model is as follows:
-
-- Requirements and Installation
-
-  - python (3.6)
-  - pytorch (0.4.1)
-  - use following commands to install other requirements
-
-  ```bash
-  cd src/self-attention
-  pip install -r requirements.txt
-  ```
-
-- Preprocess
-
-  The preprocessing scripts is used to convert text files into binarized data.
-
-  ```bash
-  ./preprocess.sh
-  ```
-
-- Train & Generate
-
-  We use fixed pre-trained word embeddings as the adaptive attention model. The word embedding is in the directory of `data` and named `chinesegigawordv5.jieba.skipngram.300d.txt`. We uploaded a demo word embedding file which contains only 100 lines.
-
-  The model can be trained and employed using following commands:
-
-  ```bash
-  ./train.sh best #best is name of the model
-  ./generate.sh best
-  ```
-
-  Parameters used for training is written in the `train.sh` script
+我们从CWN测试集中随机抽取了200个句子，请四名标注员对5个模型的生成结果从语义和语法两个角度进行独立评分，评价结果见human_evaluation目录。
